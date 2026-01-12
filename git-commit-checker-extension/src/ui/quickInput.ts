@@ -5,7 +5,8 @@
 import * as vscode from 'vscode';
 import { getValidatorService } from '../services/validatorService';
 import { getTypeOptions } from '../config/rules';
-import { ICommitMessage } from '../models/commitMessage';
+import { ICommitMessage, IDiffInfo } from '../models/commitMessage';
+import { analyzeDiff, DiffAnalysis } from '../services/diffAnalyzer';
 
 /**
  * QuickPick 选项接口
@@ -57,6 +58,159 @@ export async function showCommitInputFlow(): Promise<ICommitMessage | undefined>
         footer,
         raw: rawMessage
     };
+}
+
+/**
+ * 带自动建议的智能提交流程
+ * 分析代码差异并自动生成提交描述建议
+ */
+export async function showSmartCommitInputFlow(diffInfo: IDiffInfo): Promise<ICommitMessage | undefined> {
+    const validator = getValidatorService();
+    const config = validator.getConfig();
+
+    // 分析代码差异
+    const analysis = analyzeDiff(diffInfo);
+
+    // 显示分析摘要
+    vscode.window.showInformationMessage(
+        `📊 代码分析: ${analysis.summary} | 建议: ${analysis.suggestedType}: ${analysis.suggestedSubject}`
+    );
+
+    // Step 1: 选择提交类型（使用建议值作为默认选中）
+    const type = await selectCommitTypeWithSuggestion(
+        config.types,
+        config.typeDescriptions,
+        analysis.suggestedType
+    );
+    if (!type) return undefined;
+
+    // Step 2: 输入 scope（使用建议值）
+    const scope = await inputScopeWithSuggestion(config.scopeRequired, analysis.suggestedScope);
+    if (scope === undefined && config.scopeRequired) return undefined;
+
+    // Step 3: 输入 subject（使用建议值）
+    const subject = await inputSubjectWithSuggestion(
+        config.subjectMaxLength,
+        config.subjectMinLength,
+        analysis.suggestedSubject
+    );
+    if (!subject) return undefined;
+
+    // Step 4: 输入 body（使用建议值）
+    const body = await inputBodyWithSuggestion(analysis.suggestedBody);
+
+    // Step 5: 输入 footer
+    const footer = await inputFooter();
+
+    const rawMessage = validator.buildCommitMessage(type, scope || undefined, subject, body, footer);
+
+    return { type, scope: scope || undefined, subject, body, footer, raw: rawMessage };
+}
+
+/**
+ * 选择提交类型（带建议高亮）
+ */
+async function selectCommitTypeWithSuggestion(
+    types: string[],
+    typeDescriptions: Record<string, string>,
+    suggestedType: string
+): Promise<string | undefined> {
+    const typeOptions = getTypeOptions(types, typeDescriptions);
+
+    const items: IQuickPickTypeItem[] = typeOptions.map(opt => ({
+        label: opt.type === suggestedType ? `$(star) ${opt.label} $(arrow-left) 推荐` : opt.label,
+        description: opt.type === suggestedType ? '基于代码差异分析' : '',
+        detail: `选择此类型用于: ${opt.description}`,
+        type: opt.type
+    }));
+
+    // 将建议类型移到最前面
+    items.sort((a, b) => {
+        if (a.type === suggestedType) return -1;
+        if (b.type === suggestedType) return 1;
+        return 0;
+    });
+
+    const selected = await vscode.window.showQuickPick(items, {
+        title: '🤖 智能提交 - 步骤 1/5: 选择提交类型',
+        placeHolder: '已根据代码差异分析推荐类型，请确认或选择其他类型'
+    });
+
+    return selected?.type;
+}
+
+/**
+ * 输入 scope（带建议值）
+ */
+async function inputScopeWithSuggestion(required: boolean, suggestedScope?: string): Promise<string | undefined> {
+    const scope = await vscode.window.showInputBox({
+        title: '🤖 智能提交 - 步骤 2/5: 输入影响范围 (scope)',
+        prompt: suggestedScope
+            ? `建议: ${suggestedScope}（直接按回车使用建议，或输入其他值）`
+            : (required ? '请输入本次修改影响的模块或范围（必填）' : '可选，按回车跳过'),
+        value: suggestedScope || '',
+        placeHolder: '例如: auth, api, ui, database',
+        validateInput: (value) => {
+            if (required && !value.trim()) return 'scope 是必填项';
+            if (value && !/^[\w\-/.]+$/.test(value)) return 'scope 格式不正确';
+            return undefined;
+        }
+    });
+
+    if (scope === undefined) return undefined;
+    return scope.trim() || undefined;
+}
+
+/**
+ * 输入 subject（带建议值）
+ */
+async function inputSubjectWithSuggestion(
+    maxLength: number,
+    minLength: number,
+    suggestedSubject: string
+): Promise<string | undefined> {
+    const subject = await vscode.window.showInputBox({
+        title: '🤖 智能提交 - 步骤 3/5: 输入简短描述 (subject)',
+        prompt: `自动生成的描述已填入，可直接使用或修改 (${minLength}-${maxLength} 字符)`,
+        value: suggestedSubject,
+        placeHolder: '用一句话描述本次修改的内容',
+        validateInput: (value) => {
+            const trimmed = value.trim();
+            if (!trimmed) return 'subject 不能为空';
+            if (trimmed.length < minLength) return `至少需要 ${minLength} 个字符`;
+            if (trimmed.length > maxLength) return `不能超过 ${maxLength} 个字符`;
+            if (trimmed.endsWith('.')) return 'subject 不应以句号结尾';
+            return undefined;
+        }
+    });
+
+    if (subject === undefined) return undefined;
+    return subject.trim();
+}
+
+/**
+ * 输入 body（带建议值）
+ */
+async function inputBodyWithSuggestion(suggestedBody?: string): Promise<string | undefined> {
+    if (!suggestedBody) {
+        return inputBody();
+    }
+
+    const options: vscode.QuickPickItem[] = [
+        { label: '$(check) 使用自动生成的描述', description: '基于文件变更列表' },
+        { label: '$(edit) 自定义描述', description: '手动输入详细说明' },
+        { label: '$(arrow-right) 跳过', description: '不添加详细描述' }
+    ];
+
+    const selected = await vscode.window.showQuickPick(options, {
+        title: '🤖 智能提交 - 步骤 4/5: 添加详细描述 (body)',
+        placeHolder: '已自动生成变更描述'
+    });
+
+    if (!selected || selected.label.includes('跳过')) return undefined;
+    if (selected.label.includes('自动生成')) return suggestedBody;
+
+    return inputBody();
 }
 
 /**

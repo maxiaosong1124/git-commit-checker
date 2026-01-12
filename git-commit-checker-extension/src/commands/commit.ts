@@ -7,6 +7,7 @@ import { getGitService } from '../services/gitService';
 import { getValidatorService } from '../services/validatorService';
 import {
     showCommitInputFlow,
+    showSmartCommitInputFlow,
     showDiffPreview,
     showCommitConfirmation
 } from '../ui/quickInput';
@@ -54,8 +55,8 @@ export async function executeCommitCommand(): Promise<void> {
             return;
         }
 
-        // Step 4: 引导用户填写 commit 信息
-        const commitMessage = await showCommitInputFlow();
+        // Step 4: 引导用户填写 commit 信息（使用智能建议）
+        const commitMessage = await showSmartCommitInputFlow(diffInfo);
         if (!commitMessage) {
             vscode.window.showInformationMessage('已取消提交');
             return;
