@@ -1,0 +1,153 @@
+{
+  "name": "git-commit-checker",
+  "displayName": "Git Commit Checker",
+  "description": "检查 Git Commit 提交信息格式，确保团队提交规范统一",
+  "version": "0.0.1",
+  "publisher": "your-publisher-name",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "SCM Providers",
+    "Other"
+  ],
+  "keywords": [
+    "git",
+    "commit",
+    "conventional commits",
+    "commit message",
+    "commit lint"
+  ],
+  "activationEvents": [
+    "onCommand:gitCommitChecker.commit",
+    "onCommand:gitCommitChecker.checkDiff"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "gitCommitChecker.commit",
+        "title": "Git Commit Checker: 提交",
+        "icon": "$(git-commit)"
+      },
+      {
+        "command": "gitCommitChecker.checkDiff",
+        "title": "Git Commit Checker: 查看差异",
+        "icon": "$(diff)"
+      }
+    ],
+    "configuration": {
+      "title": "Git Commit Checker",
+      "properties": {
+        "gitCommitChecker.types": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "feat",
+            "fix",
+            "docs",
+            "style",
+            "refactor",
+            "perf",
+            "test",
+            "build",
+            "ci",
+            "chore",
+            "revert"
+          ],
+          "description": "允许的提交类型列表"
+        },
+        "gitCommitChecker.typeDescriptions": {
+          "type": "object",
+          "default": {
+            "feat": "新功能",
+            "fix": "Bug 修复",
+            "docs": "文档更新",
+            "style": "代码格式调整（不影响代码逻辑）",
+            "refactor": "代码重构",
+            "perf": "性能优化",
+            "test": "测试相关",
+            "build": "构建系统或外部依赖变更",
+            "ci": "CI 配置变更",
+            "chore": "其他杂项",
+            "revert": "回滚提交"
+          },
+          "description": "提交类型的中文描述"
+        },
+        "gitCommitChecker.subjectMaxLength": {
+          "type": "number",
+          "default": 50,
+          "description": "subject 最大长度"
+        },
+        "gitCommitChecker.subjectMinLength": {
+          "type": "number",
+          "default": 3,
+          "description": "subject 最小长度"
+        },
+        "gitCommitChecker.scopeRequired": {
+          "type": "boolean",
+          "default": false,
+          "description": "scope 是否必填"
+        },
+        "gitCommitChecker.bodyRequired": {
+          "type": "boolean",
+          "default": false,
+          "description": "body 是否必填"
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "gitCommitChecker.commit",
+        "key": "ctrl+shift+g c",
+        "mac": "cmd+shift+g c",
+        "when": "!inDebugMode"
+      }
+    ],
+    "menus": {
+      "scm/title": [
+        {
+          "command": "gitCommitChecker.commit",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "compile:tests": "tsc -p tsconfig.test.json",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "lint": "eslint src --ext ts",
+    "test": "npm run compile:tests && mocha ./out/test/**/*.test.js --timeout 10000",
+    "test:unit": "npm run compile:tests && mocha ./out/test/unit/**/*.test.js",
+    "test:integration": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/chai": "^5.2.3",
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "^20.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.13.0",
+    "@typescript-eslint/parser": "^6.13.0",
+    "@vscode/test-electron": "^2.5.2",
+    "chai": "^6.2.2",
+    "eslint": "^8.54.0",
+    "glob": "^13.0.0",
+    "mocha": "^11.7.5",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.2",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "license": "MIT"
+}
