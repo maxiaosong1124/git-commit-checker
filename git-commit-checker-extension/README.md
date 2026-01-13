@@ -11,6 +11,7 @@
 - 🔍 **自动检测代码差异** - 提交前自动获取暂存区的代码变更
 - ✅ **Commit 信息格式校验** - 按照 Conventional Commits 规范验证提交信息
 - 🎯 **智能提交引导** - 5步交互式界面引导用户填写规范的 commit 信息
+- 🤖 **AI 智能生成** - 支持使用 AI 分析代码差异，自动生成规范的提交描述
 - ⚙️ **自定义规则配置** - 支持项目级别的提交格式自定义
 
 ## 📦 安装
@@ -106,7 +107,7 @@ Closes #123
 | `scopeRequired` | boolean | false | scope 是否必填 |
 | `bodyRequired` | boolean | false | body 是否必填 |
 
-### 示例配置
+### 基础配置示例
 
 ```json
 {
@@ -115,6 +116,32 @@ Closes #123
   "gitCommitChecker.scopeRequired": true
 }
 ```
+
+### 🤖 AI 功能配置
+
+启用 AI 智能生成功能需要配置以下设置：
+
+| 设置项 | 类型 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `ai.enabled` | boolean | false | 是否启用 AI 功能 |
+| `ai.apiKey` | string | "" | OpenAI 格式 API 的 API Key |
+| `ai.endpoint` | string | "https://api.openai.com/v1" | API 端点地址 |
+| `ai.model` | string | "gpt-4o-mini" | 使用的模型名称 |
+| `ai.timeout` | number | 30000 | 请求超时时间（毫秒） |
+| `ai.maxDiffLength` | number | 8000 | 发送给 AI 的最大 diff 字符数 |
+
+#### AI 配置示例
+
+```json
+{
+  "gitCommitChecker.ai.enabled": true,
+  "gitCommitChecker.ai.apiKey": "sk-your-api-key",
+  "gitCommitChecker.ai.endpoint": "https://api.openai.com/v1",
+  "gitCommitChecker.ai.model": "gpt-4o-mini"
+}
+```
+
+> 💡 **提示**: 支持自定义端点，可以使用本地 LLM（如 Ollama、vLLM 等）或其他 OpenAI 兼容的 API 服务。
 
 ## 🛠️ 开发
 

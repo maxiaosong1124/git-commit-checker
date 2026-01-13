@@ -9,7 +9,9 @@ import {
     showCommitInputFlow,
     showSmartCommitInputFlow,
     showDiffPreview,
-    showCommitConfirmation
+    showCommitConfirmation,
+    showAIGenerateOption,
+    showAICommitInputFlow
 } from '../ui/quickInput';
 
 /**
@@ -55,8 +57,27 @@ export async function executeCommitCommand(): Promise<void> {
             return;
         }
 
-        // Step 4: 引导用户填写 commit 信息（使用智能建议）
-        const commitMessage = await showSmartCommitInputFlow(diffInfo);
+        // Step 4: 询问用户选择提交方式
+        const commitMethod = await showAIGenerateOption();
+        if (!commitMethod) {
+            vscode.window.showInformationMessage('已取消提交');
+            return;
+        }
+
+        // Step 5: 根据用户选择引导填写 commit 信息
+        let commitMessage;
+        switch (commitMethod) {
+            case 'ai':
+                commitMessage = await showAICommitInputFlow(diffInfo);
+                break;
+            case 'smart':
+                commitMessage = await showSmartCommitInputFlow(diffInfo);
+                break;
+            case 'manual':
+                commitMessage = await showCommitInputFlow();
+                break;
+        }
+
         if (!commitMessage) {
             vscode.window.showInformationMessage('已取消提交');
             return;

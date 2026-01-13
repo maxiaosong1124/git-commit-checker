@@ -95,6 +95,36 @@
           "type": "boolean",
           "default": false,
           "description": "body 是否必填"
+        },
+        "gitCommitChecker.ai.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "是否启用 AI 智能描述生成功能"
+        },
+        "gitCommitChecker.ai.apiKey": {
+          "type": "string",
+          "default": "",
+          "description": "OpenAI 格式 API 的 API Key"
+        },
+        "gitCommitChecker.ai.endpoint": {
+          "type": "string",
+          "default": "https://api.openai.com/v1",
+          "description": "API 端点地址，支持 OpenAI、本地 LLM（如 Ollama）等"
+        },
+        "gitCommitChecker.ai.model": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "使用的模型名称"
+        },
+        "gitCommitChecker.ai.timeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "AI 请求超时时间（毫秒）"
+        },
+        "gitCommitChecker.ai.maxDiffLength": {
+          "type": "number",
+          "default": 8000,
+          "description": "发送给 AI 的最大 diff 字符数"
         }
       }
     },

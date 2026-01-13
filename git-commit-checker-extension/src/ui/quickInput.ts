@@ -7,6 +7,7 @@ import { getValidatorService } from '../services/validatorService';
 import { getTypeOptions } from '../config/rules';
 import { ICommitMessage, IDiffInfo } from '../models/commitMessage';
 import { analyzeDiff, DiffAnalysis } from '../services/diffAnalyzer';
+import { getAIService, AIGeneratedCommit } from '../services/aiService';
 
 /**
  * QuickPick 选项接口
@@ -456,4 +457,204 @@ export async function showCommitConfirmation(message: string): Promise<boolean> 
     );
 
     return result === '确认提交';
+}
+
+/**
+ * 显示 AI 生成选项
+ * 询问用户是否使用 AI 生成提交描述
+ */
+export async function showAIGenerateOption(): Promise<'ai' | 'smart' | 'manual' | undefined> {
+    const aiService = getAIService();
+    const isAIAvailable = aiService.isEnabled();
+
+    const options: vscode.QuickPickItem[] = [];
+
+    if (isAIAvailable) {
+        options.push({
+            label: '$(sparkle) AI 智能生成',
+            description: '使用 AI 分析代码差异生成提交描述',
+            detail: '推荐：基于大语言模型深度理解代码变更'
+        });
+    }
+
+    options.push(
+        {
+            label: '$(lightbulb) 智能建议',
+            description: '基于文件变更自动推断提交类型和描述',
+            detail: '快速：根据文件名和变更类型生成建议'
+        },
+        {
+            label: '$(edit) 手动输入',
+            description: '完全手动填写提交信息',
+            detail: '完整控制所有提交信息'
+        }
+    );
+
+    if (!isAIAvailable) {
+        options.push({
+            label: '$(gear) 配置 AI 功能',
+            description: '设置 API Key 以启用 AI 智能生成',
+            detail: '需要配置 OpenAI 格式的 API'
+        });
+    }
+
+    const selected = await vscode.window.showQuickPick(options, {
+        title: '选择提交方式',
+        placeHolder: isAIAvailable ? '推荐使用 AI 智能生成获得更准确的提交描述' : '选择如何填写提交信息'
+    });
+
+    if (!selected) return undefined;
+
+    if (selected.label.includes('AI 智能生成')) return 'ai';
+    if (selected.label.includes('智能建议')) return 'smart';
+    if (selected.label.includes('手动输入')) return 'manual';
+    if (selected.label.includes('配置 AI')) {
+        // 打开设置页面
+        await vscode.commands.executeCommand(
+            'workbench.action.openSettings',
+            'gitCommitChecker.ai'
+        );
+        return undefined;
+    }
+
+    return undefined;
+}
+
+/**
+ * 显示 AI 生成进度
+ */
+export async function showAIGeneratingProgress<T>(
+    task: Promise<T>,
+    title: string = 'AI 正在分析代码变更...'
+): Promise<T> {
+    return vscode.window.withProgress(
+        {
+            location: vscode.ProgressLocation.Notification,
+            title: title,
+            cancellable: false
+        },
+        async (progress) => {
+            progress.report({ message: '请稍候...' });
+            return task;
+        }
+    );
+}
+
+/**
+ * 显示 AI 生成结果供用户确认/编辑
+ */
+export async function showAIGeneratedResult(
+    result: AIGeneratedCommit
+): Promise<ICommitMessage | undefined> {
+    const validator = getValidatorService();
+    const config = validator.getConfig();
+
+    // 显示 AI 推理过程（如果有）
+    if (result.reasoning) {
+        vscode.window.showInformationMessage(`🤖 AI 分析: ${result.reasoning}`);
+    }
+
+    // 显示预览并询问是否编辑
+    const preview = result.scope
+        ? `${result.type}(${result.scope}): ${result.subject}`
+        : `${result.type}: ${result.subject}`;
+
+    const action = await vscode.window.showInformationMessage(
+        `AI 生成的提交信息: "${preview}"`,
+        '使用此描述',
+        '编辑后使用',
+        '取消'
+    );
+
+    if (!action || action === '取消') return undefined;
+
+    let finalType = result.type;
+    let finalScope = result.scope;
+    let finalSubject = result.subject;
+    let finalBody = result.body;
+    let finalFooter: string | undefined;
+
+    if (action === '编辑后使用') {
+        // 允许用户编辑各个部分
+        const editedType = await selectCommitTypeWithSuggestion(
+            config.types,
+            config.typeDescriptions,
+            result.type
+        );
+        if (!editedType) return undefined;
+        finalType = editedType;
+
+        const editedScope = await inputScopeWithSuggestion(config.scopeRequired, result.scope);
+        if (editedScope === undefined && config.scopeRequired) return undefined;
+        finalScope = editedScope || undefined;
+
+        const editedSubject = await inputSubjectWithSuggestion(
+            config.subjectMaxLength,
+            config.subjectMinLength,
+            result.subject
+        );
+        if (!editedSubject) return undefined;
+        finalSubject = editedSubject;
+
+        finalBody = await inputBodyWithSuggestion(result.body);
+        finalFooter = await inputFooter();
+    }
+
+    const rawMessage = validator.buildCommitMessage(
+        finalType,
+        finalScope,
+        finalSubject,
+        finalBody,
+        finalFooter
+    );
+
+    return {
+        type: finalType,
+        scope: finalScope,
+        subject: finalSubject,
+        body: finalBody,
+        footer: finalFooter,
+        raw: rawMessage
+    };
+}
+
+/**
+ * AI 智能提交流程
+ * 使用 AI 分析代码差异并生成提交描述
+ */
+export async function showAICommitInputFlow(
+    diffInfo: IDiffInfo
+): Promise<ICommitMessage | undefined> {
+    const aiService = getAIService();
+
+    try {
+        // 调用 AI 生成
+        const aiResult = await showAIGeneratingProgress(
+            aiService.generateCommitMessage(diffInfo.diffContent, diffInfo.stagedFiles),
+            '🤖 AI 正在分析代码变更并生成提交描述...'
+        );
+
+        // 显示结果供用户确认/编辑
+        return await showAIGeneratedResult(aiResult);
+
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+
+        const retry = await vscode.window.showErrorMessage(
+            `AI 生成失败: ${errorMessage}`,
+            '重试',
+            '使用智能建议',
+            '手动输入'
+        );
+
+        if (retry === '重试') {
+            return showAICommitInputFlow(diffInfo);
+        } else if (retry === '使用智能建议') {
+            return showSmartCommitInputFlow(diffInfo);
+        } else if (retry === '手动输入') {
+            return showCommitInputFlow();
+        }
+
+        return undefined;
+    }
 }
