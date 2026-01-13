@@ -2,7 +2,7 @@
   "name": "git-commit-checker",
   "displayName": "Git Commit Checker",
   "description": "检查 Git Commit 提交信息格式，确保团队提交规范统一",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "Maxiaosong",
   "engines": {
     "vscode": "^1.85.0"
@@ -177,7 +177,11 @@
   },
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/maxiaosong1124/git-commit-checker.git"
   },
+  "bugs": {
+    "url": "https://github.com/maxiaosong1124/git-commit-checker/issues"
+  },
+  "homepage": "https://github.com/maxiaosong1124/git-commit-checker#readme",
   "license": "MIT"
 }

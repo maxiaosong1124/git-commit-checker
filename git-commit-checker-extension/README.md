@@ -1,8 +1,11 @@
 # Git Commit Checker
 
+[![GitHub](https://img.shields.io/badge/GitHub-181717?logo=github&logoColor=white)](https://github.com/maxiaosong1124/git-commit-checker)
 [![VSCode](https://img.shields.io/badge/VSCode-007ACC?logo=visual-studio-code&logoColor=white)](https://code.visualstudio.com/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+> 📦 **GitHub 仓库**: [https://github.com/maxiaosong1124/git-commit-checker](https://github.com/maxiaosong1124/git-commit-checker)
 
 一个 VSCode 插件，用于检查和规范 Git Commit 提交信息格式，确保团队代码提交规范的统一性。
 
@@ -178,7 +181,19 @@ MIT License
 
 ## 🤝 贡献
 
-欢迎提交 Issue 和 Pull Request！
+欢迎参与项目开发！
+
+- 🐛 [提交 Bug 报告](https://github.com/maxiaosong1124/git-commit-checker/issues/new?labels=bug)
+- 💡 [提交功能建议](https://github.com/maxiaosong1124/git-commit-checker/issues/new?labels=enhancement)
+- 🔧 [提交 Pull Request](https://github.com/maxiaosong1124/git-commit-checker/pulls)
+
+### 贡献步骤
+
+1. Fork 本仓库
+2. 创建功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交更改 (`git commit -m 'feat: add amazing feature'`)
+4. 推送到分支 (`git push origin feature/amazing-feature`)
+5. 创建 Pull Request
 
 ## 📚 参考
 

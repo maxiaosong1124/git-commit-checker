@@ -2,6 +2,8 @@
 
 All notable changes to the "Git Commit Checker" extension will be documented in this file.
 
+📦 **GitHub 仓库**: [https://github.com/maxiaosong1124/git-commit-checker](https://github.com/maxiaosong1124/git-commit-checker)
+
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
