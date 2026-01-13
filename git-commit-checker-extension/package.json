@@ -3,7 +3,7 @@
   "displayName": "Git Commit Checker",
   "description": "检查 Git Commit 提交信息格式，确保团队提交规范统一",
   "version": "0.0.1",
-  "publisher": "your-publisher-name",
+  "publisher": "Maxiaosong",
   "engines": {
     "vscode": "^1.85.0"
   },
